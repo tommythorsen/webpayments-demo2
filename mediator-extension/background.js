@@ -1,15 +1,25 @@
 "use strict";
 
+var pendingPaymentRequest = null;
+var pendingResponseCallback = null;
+var paymentTab = null;
+
 function PaymentAppGlobalScope(url, code) {
-    var self = this;
-    self.name = url.substring(url.lastIndexOf('/') + 1);
-    self.start_url = url;
-    self.enabled_methods = [];
-    self.eventListeners = {};
-    self.addEventListener = function(name, func) {
-        self.eventListeners[name] = func;
+    this.name = url.substring(url.lastIndexOf('/') + 1);
+    this.start_url = url;
+    this.code = code;
+    this.enabled_methods = [];
+    this.eventListeners = {};
+    this.addEventListener = function(name, func) {
+        this.eventListeners[name] = func;
     }
+
+    var self = this;
     eval(code);
+
+    this.getEventListener = function(name) {
+        return this.eventListeners[name];
+    }
 }
 
 function register(url, sendResponse) {
@@ -17,9 +27,9 @@ function register(url, sendResponse) {
     fetch(url).then(function(response) {
         return response.text();
     }).then(function(text) {
-        var paymentApp = new PaymentAppGlobalScope(url, text);
+        var scope = new PaymentAppGlobalScope(url, text);
         var entry = {}
-        entry[url] = paymentApp;
+        entry[url] = scope;
         chrome.storage.local.set(entry);
         alert("Payment App " + url + " installed");
     });
@@ -56,6 +66,30 @@ function paymentRequest(request, sendResponse) {
     return true;
 }
 
+function onPaymentAppSelected(paymentApp, sendResponse) {
+    if (paymentTab) {
+        chrome.tabs.remove(paymentTab.id);
+        paymentTab = null;
+    }
+
+    var scope = new PaymentAppGlobalScope(paymentApp.start_url, paymentApp.code);
+    var eventListener = scope.getEventListener('paymentrequest');
+    if (eventListener) {
+        eventListener({
+            request: pendingPaymentRequest,
+            respondWith: function(response) {
+                pendingResponseCallback({
+                    to: "webpayments-polyfill.js",
+                    response: response
+                });
+                pendingPaymentRequest = null;
+                pendingResponseCallback = null;
+            }
+        });
+    }
+
+    sendResponse({to: "webpayments-polyfill.js", result: true});
+}
 
 // Message listener for receiving messages from the polyfill functions via
 // content.js.
@@ -65,6 +99,8 @@ chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
         return register(message.param, sendResponse);
     } else if (message.command == "paymentrequest") {
         return paymentRequest(message.param, sendResponse);
+    } else if (message.command == "onpaymentappselected") {
+        return onPaymentAppSelected(message.param, sendResponse);
     } else {
         sendResponse({to: "webpayments-polyfill.js", error: "Unknown command: " + message.command});
     }

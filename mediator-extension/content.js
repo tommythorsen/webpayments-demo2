@@ -13,7 +13,7 @@ document.documentElement.appendChild(script);
 
 // Pass messages between the polyfill and the extension
 window.addEventListener("message", function(event) {
-    if (!event.data.to || (event.data.to != "background.js")) return
+    if (!event.data || !event.data.to || (event.data.to != "background.js")) return;
     chrome.runtime.sendMessage(event.data, function(response) {
         event.source.postMessage(response, "*");
     });

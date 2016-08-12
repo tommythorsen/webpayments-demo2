@@ -19,17 +19,6 @@ navigator.paymentApp = {
     },
 }
 
-// Internal helper function for passing messages to background.js
-var sendMessage = function(command, param, callback) {
-    if (callback) {
-        window.addEventListener("message", function(event) {
-            if (!event.data.to || (event.data.to != "webpayments-polyfill.js")) return;
-            callback(event.data);
-        }, false);
-    }
-    window.postMessage({to: "background.js", command: command, param: param}, "*");
-}
-
 // The PaymentRequest interface as defined at:
 //
 //  https://www.w3.org/TR/payment-request/#paymentrequest-interface
@@ -56,3 +45,15 @@ function PaymentRequest(methodData, details, options) {
     }
 }
 
+// Internal helper function for passing messages to background.js
+var sendMessage = function(command, param, callback) {
+    if (callback) {
+        window.addEventListener("message", function(event) {
+            if (!event.data ||
+                !event.data.to ||
+                (event.data.to != "webpayments-polyfill.js")) return;
+            callback(event.data);
+        }, false);
+    }
+    window.postMessage({to: "background.js", command: command, param: param}, "*");
+}

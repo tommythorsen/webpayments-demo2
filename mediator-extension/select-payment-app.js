@@ -7,7 +7,10 @@ function appendPaymentApp(paymentApp) {
         '<button style="float: right" id="pay">Pay</button>' +
         '<p>' + paymentApp.start_url + '</p>';
     div.querySelector("#pay").addEventListener('click', function() {
-        location.href = paymentApp.start_url;
+        chrome.runtime.sendMessage({to: "background.js",
+            command: "onpaymentappselected",
+            param: paymentApp },
+            function(response) {});
     });
     apps.appendChild(div);
 }
