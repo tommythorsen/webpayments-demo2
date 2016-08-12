@@ -1,15 +1,11 @@
 "use strict";
 
 function PaymentAppGlobalScope(url, code) {
-    this.url = url;
-    this.code = code;
-    this.self = this;
-    self.value1 = 1;
-    console.log("EVAL:");
-    console.log(code);
-    console.log(eval(code));
-    console.log(self.value1);
-    console.log(self.value2);
+    var self = this;
+    var name = url.substring(url.lastIndexOf('/') + 1);
+    var start_url = url;
+    var enabled_methods = [];
+    eval(code);
 }
 
 function register(url, sendResponse) {
@@ -18,6 +14,9 @@ function register(url, sendResponse) {
         return response.text();
     }).then(function(text) {
         var paymentApp = new PaymentAppGlobalScope(url, text);
+        console.log(paymentApp.name);
+        console.log(paymentApp.start_url);
+        console.log(paymentApp.enabled_methods);
         var entry = {}
         entry[url] = {
             url: url,
