@@ -1,21 +1,27 @@
 "use strict";
 
-function PaymentAppGlobalScope(url) {
+function PaymentAppGlobalScope(url, code) {
     this.url = url;
+    this.code = code;
+    this.self = this;
+    console.log("EVAL:");
+    eval(code);
 }
 
 function register(url, sendResponse) {
     console.log("register: " + url);
     fetch(url).then(function(response) {
-        return response.blob();
-    }).then(function(blob) {
-        console.log(blob);
+        return response.text();
+    }).then(function(text) {
         var entry = {}
-        entry[url] = url;
+        entry[url] = {
+            url: url,
+            code: text
+        };
         chrome.storage.local.set(entry);
         alert("Payment App " + url + " installed");
-        sendResponse({to: "webpayments-polyfill.js", result: true});
     });
+    sendResponse({to: "webpayments-polyfill.js", result: true});
 }
 
 
