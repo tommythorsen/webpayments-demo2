@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>TommyPay</title>
+    </head>
+    <body>
+        <h2>TommyPay</h2>
+        <pre id="paymentView"></pre>
+
+        <button style="display:none" id="install" onclick="install()">Install Payment App</button>
+
+        <script>
+            var installButton = document.getElementById("install");
+            var paymentView = document.getElementById("paymentView");
+
+            var interval = setInterval(function() {
+                if (navigator.paymentApp) {
+                    clearInterval(interval);
+                    onLoaded();
+                }
+            }, 100);
+
+            function onLoaded() {
+                console.log("loaded!!");
+                installButton.style.display = "inline";
+            }
+
+            function install() {
+                console.log("install!!");
+                navigator.paymentApp.register("paymentapp.js");
+            }
+        </script>
+    </body>
+</html>
+
