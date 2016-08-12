@@ -4,8 +4,12 @@ function PaymentAppGlobalScope(url, code) {
     this.url = url;
     this.code = code;
     this.self = this;
+    self.value1 = 1;
     console.log("EVAL:");
-    eval(code);
+    console.log(code);
+    console.log(eval(code));
+    console.log(self.value1);
+    console.log(self.value2);
 }
 
 function register(url, sendResponse) {
@@ -13,6 +17,7 @@ function register(url, sendResponse) {
     fetch(url).then(function(response) {
         return response.text();
     }).then(function(text) {
+        var paymentApp = new PaymentAppGlobalScope(url, text);
         var entry = {}
         entry[url] = {
             url: url,
