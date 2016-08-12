@@ -78,12 +78,14 @@ function onPaymentAppSelected(paymentApp, sendResponse) {
         eventListener({
             request: pendingPaymentRequest,
             respondWith: function(response) {
-                pendingResponseCallback({
-                    to: "webpayments-polyfill.js",
-                    response: response
+                Promise.resolve(response).then(function(value) {
+                    pendingResponseCallback({
+                        to: "webpayments-polyfill.js",
+                        response: response
+                    });
+                    pendingPaymentRequest = null;
+                    pendingResponseCallback = null;
                 });
-                pendingPaymentRequest = null;
-                pendingResponseCallback = null;
             }
         });
     }
