@@ -30,3 +30,29 @@ var sendMessage = function(command, param, callback) {
     window.postMessage({to: "background.js", command: command, param: param}, "*");
 }
 
+// The PaymentRequest interface as defined at:
+//
+//  https://www.w3.org/TR/payment-request/#paymentrequest-interface
+//
+// The "methodData" and "details" parameters are mandatory. "options"
+// is optional.
+//
+function PaymentRequest(methodData, details, options) {
+    this.methodData = methodData;
+    this.details = details;
+    this.options = options;
+    this.show = function() {
+        console.log("PaymentRequest.show() called");
+        var request = JSON.stringify(this);
+        return new Promise(function(resolve, reject) {
+            sendMessage("paymentrequest", request, function(response) {
+                if (response.error) {
+                    reject(response.error);
+                } else {
+                    resolve(response.response);
+                }
+            });
+        });
+    }
+}
+
