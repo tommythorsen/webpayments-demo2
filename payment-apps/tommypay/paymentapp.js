@@ -10,8 +10,7 @@ self.addEventListener('paymentrequest', function(event) {
             });
         });
 
-        w = window.open("index.html");
-        w.postMessage("test", "*");
+        w = new PaymentWindow();
+        w.openUrl("index.html");
     }));
-
 });

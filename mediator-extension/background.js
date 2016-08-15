@@ -4,6 +4,8 @@ var pendingPaymentRequest = null;
 var pendingResponseCallback = null;
 var paymentTab = null;
 
+var paymentWindowPromise = null;
+
 function PaymentAppGlobalScope(url, code) {
     this.name = url.substring(url.lastIndexOf('/') + 1);
     this.start_url = url;
@@ -93,6 +95,32 @@ function onPaymentAppSelected(paymentApp, sendResponse) {
     sendResponse({to: "webpayments-polyfill.js", result: true});
 }
 
+function openUrl(url, sendResponse) {
+    console.log("openUrl: " + url);
+    if (paymentWindowPromise) {
+        Promise.reject(paymentWindowPromise);
+    }
+
+    paymentWindowPromise = new Promise(function(resolve, reject) {
+        chrome.tabs.create({url: url, active: false}, function(tab) {
+            paymentTab = tab;
+            chrome.windows.create(
+                    {
+                        tabId: tab.id,
+                        type: 'popup',
+                        focused: true,
+                        width: 400,
+                        height: 400
+                    });
+        });
+    });
+
+    return true;
+}
+
+function close(sendResponse) {
+}
+
 // Message listener for receiving messages from the polyfill functions via
 // content.js.
 //
@@ -101,6 +129,10 @@ chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
         return register(message.param, sendResponse);
     } else if (message.command == "paymentrequest") {
         return paymentRequest(message.param, sendResponse);
+    } else if (message.command == "openurl") {
+        return openUrl(message.param, sendResponse);
+    } else if (message.command == "close") {
+        return close(sendResponse);
     } else if (message.command == "onpaymentappselected") {
         return onPaymentAppSelected(message.param, sendResponse);
     } else {
