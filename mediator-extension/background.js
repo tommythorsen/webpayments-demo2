@@ -69,6 +69,8 @@ function paymentRequest(request, sendResponse) {
 }
 
 function onPaymentAppSelected(paymentApp, sendResponse) {
+    console.log("onPaymentAppSelected");
+
     if (paymentTab) {
         chrome.tabs.remove(paymentTab.id);
         paymentTab = null;
