@@ -3,14 +3,13 @@ self.enabled_methods = [ "tommypay" ];
 
 self.addEventListener('paymentrequest', function(event) {
     event.respondWith(new Promise(function(resolve, reject) {
-        window.addEventListener("message", function(event) {
+        w = new PaymentWindow();
+        w.openUrl("index.html")
+        .then(function(response) {
             resolve({
                 methodName: "tommypay",
                 details: {}
             });
         });
-
-        w = new PaymentWindow();
-        w.openUrl("index.html");
     }));
 });

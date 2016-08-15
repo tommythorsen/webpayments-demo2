@@ -97,28 +97,51 @@ function onPaymentAppSelected(paymentApp, sendResponse) {
 
 function openUrl(url, sendResponse) {
     console.log("openUrl: " + url);
-    if (paymentWindowPromise) {
-        Promise.reject(paymentWindowPromise);
+
+    if (paymentTab) {
+        chrome.tabs.remove(paymentTab.id);
+        paymentTab = null;
     }
 
-    paymentWindowPromise = new Promise(function(resolve, reject) {
-        chrome.tabs.create({url: url, active: false}, function(tab) {
-            paymentTab = tab;
-            chrome.windows.create(
-                    {
-                        tabId: tab.id,
-                        type: 'popup',
-                        focused: true,
-                        width: 400,
-                        height: 400
-                    });
-        });
+    pendingResponseCallback = sendResponse;
+
+    chrome.tabs.create({url: url, active: false}, function(tab) {
+        paymentTab = tab;
+        chrome.windows.create(
+                {
+                    tabId: tab.id,
+                    type: 'popup',
+                    focused: true,
+                    width: 400,
+                    height: 400
+                });
     });
 
     return true;
 }
 
 function close(sendResponse) {
+    if (paymentTab) {
+        chrome.tabs.remove(paymentTab.id);
+        paymentTab = null;
+    }
+
+    sendResponse({to: "webpayments-polyfill.js", result: true});
+}
+
+function onPaymentWindowFinished(response, sendResponse) {
+    if (paymentTab) {
+        chrome.tabs.remove(paymentTab.id);
+        paymentTab = null;
+    }
+
+    pendingResponseCallback({
+        to: "webpayments-polyfill.js",
+        response: response
+    });
+    pendingResponseCallback = null;
+
+    sendResponse({to: "webpayments-polyfill.js", result: true});
 }
 
 // Message listener for receiving messages from the polyfill functions via
