@@ -7,6 +7,7 @@ var paymentTab = null;
 var paymentWindowPromise = null;
 
 function PaymentAppGlobalScope(url, code) {
+    console.log("new PaymentAppGlobalScope()");
     this.name = url.substring(url.lastIndexOf('/') + 1);
     this.start_url = url;
     this.code = code;
@@ -17,10 +18,45 @@ function PaymentAppGlobalScope(url, code) {
     }
 
     var self = this;
+
     eval(code);
 
     this.getEventListener = function(name) {
         return this.eventListeners[name];
+    }
+}
+
+function PaymentWindow() {
+    console.log("new PaymentWindow()");
+
+    this.openUrl = function(url) {
+        console.log("openUrl: " + url);
+
+        if (paymentTab) {
+            chrome.tabs.remove(paymentTab.id);
+            paymentTab = null;
+        }
+
+        return new Promise(function(resolve, reject) {
+            chrome.tabs.create({url: url, active: false}, function(tab) {
+                paymentTab = tab;
+                chrome.windows.create({
+                    tabId: tab.id,
+                    type: 'popup',
+                    focused: true,
+                    width: 400,
+                    height: 400
+                });
+            });
+            resolve(true);
+        });
+    }
+
+    this.close = function() {
+        if (paymentTab) {
+            chrome.tabs.remove(paymentTab.id);
+            paymentTab = null;
+        }
     }
 }
 
@@ -79,10 +115,13 @@ function onPaymentAppSelected(paymentApp, sendResponse) {
     var scope = new PaymentAppGlobalScope(paymentApp.start_url, paymentApp.code);
     var eventListener = scope.getEventListener('paymentrequest');
     if (eventListener) {
+        console.log(eventListener);
         eventListener({
             request: pendingPaymentRequest,
             respondWith: function(response) {
+                console.log("respondWith: " + response);
                 Promise.resolve(response).then(function(value) {
+                    console.log("promised value: " + value);
                     pendingResponseCallback({
                         to: "webpayments-polyfill.js",
                         response: response
@@ -97,55 +136,6 @@ function onPaymentAppSelected(paymentApp, sendResponse) {
     sendResponse({to: "webpayments-polyfill.js", result: true});
 }
 
-function openUrl(url, sendResponse) {
-    console.log("openUrl: " + url);
-
-    if (paymentTab) {
-        chrome.tabs.remove(paymentTab.id);
-        paymentTab = null;
-    }
-
-    pendingResponseCallback = sendResponse;
-
-    chrome.tabs.create({url: url, active: false}, function(tab) {
-        paymentTab = tab;
-        chrome.windows.create(
-                {
-                    tabId: tab.id,
-                    type: 'popup',
-                    focused: true,
-                    width: 400,
-                    height: 400
-                });
-    });
-
-    return true;
-}
-
-function close(sendResponse) {
-    if (paymentTab) {
-        chrome.tabs.remove(paymentTab.id);
-        paymentTab = null;
-    }
-
-    sendResponse({to: "webpayments-polyfill.js", result: true});
-}
-
-function onPaymentWindowFinished(response, sendResponse) {
-    if (paymentTab) {
-        chrome.tabs.remove(paymentTab.id);
-        paymentTab = null;
-    }
-
-    pendingResponseCallback({
-        to: "webpayments-polyfill.js",
-        response: response
-    });
-    pendingResponseCallback = null;
-
-    sendResponse({to: "webpayments-polyfill.js", result: true});
-}
-
 // Message listener for receiving messages from the polyfill functions via
 // content.js.
 //
@@ -154,10 +144,6 @@ chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
         return register(message.param, sendResponse);
     } else if (message.command == "paymentrequest") {
         return paymentRequest(message.param, sendResponse);
-    } else if (message.command == "openurl") {
-        return openUrl(message.param, sendResponse);
-    } else if (message.command == "close") {
-        return close(sendResponse);
     } else if (message.command == "onpaymentappselected") {
         return onPaymentAppSelected(message.param, sendResponse);
     } else {

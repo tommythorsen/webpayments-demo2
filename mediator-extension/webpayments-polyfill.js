@@ -45,23 +45,6 @@ function PaymentRequest(methodData, details, options) {
     }
 }
 
-function PaymentWindow() {
-    this.openUrl = function(url) {
-        return new Promise(function(resolve, reject) {
-            sendMessage("openurl", url, function(response) {
-                if (response.error) {
-                    reject(response.error);
-                } else {
-                    resolve(response.response);
-                }
-            });
-        });
-    }
-    this.close = function() {
-        sendMessage("close");
-    }
-}
-
 // Internal helper function for passing messages to background.js
 var sendMessage = function(command, param, callback) {
     if (callback) {
