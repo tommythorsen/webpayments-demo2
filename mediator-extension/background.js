@@ -9,6 +9,7 @@ var paymentWindowPromise = null;
 function PaymentAppGlobalScope(url, code) {
     console.log("new PaymentAppGlobalScope()");
     this.name = url.substring(url.lastIndexOf('/') + 1);
+    this.root = url.substring(0, url.lastIndexOf('/') + 1);
     this.start_url = url;
     this.code = code;
     this.enabled_methods = [];
@@ -18,46 +19,44 @@ function PaymentAppGlobalScope(url, code) {
     }
 
     var self = this;
-
     eval(code);
 
     this.getEventListener = function(name) {
         return this.eventListeners[name];
     }
-}
 
-function PaymentWindow() {
-    console.log("new PaymentWindow()");
+    function PaymentWindow() {
+        this.openUrl = function(url) {
+            if (paymentTab) {
+                chrome.tabs.remove(paymentTab.id);
+                paymentTab = null;
+            }
 
-    this.openUrl = function(url) {
-        console.log("openUrl: " + url);
-
-        if (paymentTab) {
-            chrome.tabs.remove(paymentTab.id);
-            paymentTab = null;
-        }
-
-        return new Promise(function(resolve, reject) {
-            chrome.tabs.create({url: url, active: false}, function(tab) {
-                paymentTab = tab;
-                chrome.windows.create({
-                    tabId: tab.id,
-                    type: 'popup',
-                    focused: true,
-                    width: 400,
-                    height: 400
+            return new Promise(function(resolve, reject) {
+                if (!url.startsWith("http:") && !url.startsWith("https:")) {
+                    url = self.root + url;
+                }
+                chrome.tabs.create({url: url, active: false}, function(tab) {
+                    paymentTab = tab;
+                    chrome.windows.create({
+                        tabId: tab.id,
+                        type: 'popup',
+                        focused: true,
+                        width: 400,
+                        height: 400
+                    });
                 });
             });
-            resolve(true);
-        });
-    }
+        }
 
-    this.close = function() {
-        if (paymentTab) {
-            chrome.tabs.remove(paymentTab.id);
-            paymentTab = null;
+        this.close = function() {
+            if (paymentTab) {
+                chrome.tabs.remove(paymentTab.id);
+                paymentTab = null;
+            }
         }
     }
+
 }
 
 function register(url, sendResponse) {
